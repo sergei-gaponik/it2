@@ -311,8 +311,8 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
     String label;
     if (fec) label = " fec ";
     else label = " media ";
-    // TASK correct the if-instruction to work properly
-    if (random.nextDouble() > 0.0) {
+    //  correct the if-instruction to work properly
+    if (random.nextDouble() > lossRate) {
       System.out.println("Send frame: " + imagenb + label);
       RTPsocket.send(senddp);
     } else {
@@ -445,27 +445,30 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
    */
   //TASK Complete the OPTIONS response
   private String options() {
-    return "....";
+
+    return "Public: DESCRIBE, OPTIONS, SETUP, TEARDOWN, PLAY, PAUSE" + CRLF;
   }
 
 
   /** Creates a DESCRIBE response string in SDP format for current media */
   //TASK Complete the DESCRIBE response
-  private String describe() {
+  private String describe() throws UnknownHostException{
+
     StringWriter rtspHeader = new StringWriter();
     StringWriter rtspBody = new StringWriter();
 
+    String hostName = InetAddress.getLocalHost().getHostName();
+
     // Write the body first so we can get the size later
     rtspBody.write("v=0" + CRLF);
-    rtspBody.write("...");
-    rtspBody.write("...");
-    rtspBody.write("...");
+    rtspBody.write("m=video 0 RTP/AVP " + RTP_dest_port + CRLF);
+    rtspBody.write("s=" + RTSP_ID + CRLF);
+    rtspBody.write("t=0 0" + CRLF);
 
-    rtspHeader.write("Content-Base: " + "");
-    rtspHeader.write("Content-Type: " + "");
-    rtspHeader.write("Content-Length: " + "");
-    rtspHeader.write(CRLF);
+    rtspHeader.write("Content-Base: rtsp://" + hostName + "/" + VideoFileName + CRLF);
+    rtspHeader.write("Content-Type: application/sdp" + CRLF);
+    rtspHeader.write("Content-Length: " + rtspBody.getBuffer().length() + CRLF);
 
-    return rtspHeader.toString() + rtspBody.toString();
+    return rtspHeader.toString() + CRLF + rtspBody.toString() + CRLF;
   }
 }
