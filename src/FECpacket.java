@@ -212,9 +212,13 @@ public class FECpacket extends RTPpacket {
     ArrayList<Integer> list = new ArrayList<>();
     //System.out.println("FEC: base + mask " + snBase + " " + Long.toHexString(mask) );
     // generates involved packet numbers from mask
+
+    System.out.println("mask " + mask);
+
     for (int i = 0; i < 48; i++) {
       if ( (mask & 0x8000000000000000L) != 0 ) {
         list.add(snBase + i);
+        System.out.println("test");
       }
       mask = mask << 1;
     }

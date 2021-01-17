@@ -258,6 +258,7 @@ public class FecHandler {
 
         fpacket.printHeaders();
 
+        System.out.println("fpacket");
         ArrayList<Integer> rtpList = fpacket.getRtpList();
 
         System.out.println("fnr:");
