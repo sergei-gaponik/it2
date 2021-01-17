@@ -205,6 +205,10 @@ public class FECpacket extends RTPpacket {
    */
   public ArrayList<Integer> getRtpList() {
     // determine the involved media packets (base address + mask)
+
+    System.out.println("snBase: ");
+    System.out.println(snBase);
+
     ArrayList<Integer> list = new ArrayList<>();
     //System.out.println("FEC: base + mask " + snBase + " " + Long.toHexString(mask) );
     // generates involved packet numbers from mask
@@ -326,7 +330,11 @@ public class FECpacket extends RTPpacket {
     M ^= rtp.Marker;
     ptRecovery ^= rtp.getpayloadtype();
     tsRecovery ^= rtp.gettimestamp();
+    
+    int newProtectionLength = Math.max(protectionLength, data.length);
 
+    setUlpLevelHeader(0, newProtectionLength ,fecGroupSize);
+    
     setFecHeader();  // update Header with changed variables
   }
 
@@ -337,11 +345,28 @@ public class FECpacket extends RTPpacket {
    */
   public RTPpacket getLostRtp(int snr) {
     // TODO get the correct SNr
-    return new RTPpacket(ptRecovery, snr  ,tsRecovery, payload, lengthRecovery);
+
+    System.out.println("getLostRtp");
+
+    System.out.println("snr " + snr + " base " + snBase);
+
+     return new RTPpacket(ptRecovery, snr - snBase, tsRecovery, payload, lengthRecovery);
   }
 
 
   // *************** Debugging *******************************************************************
+
+
+  private String bytesToHex(byte[] bytes) {
+    char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    char[] hexChars = new char[bytes.length * 2];
+    for (int j = 0; j < bytes.length; j++) {
+        int v = bytes[j] & 0xFF;
+        hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+        hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+    }
+    return new String(hexChars);
+}
 
   /**
    * Prints the FEC- and ULP-Header fields
@@ -352,6 +377,7 @@ public class FECpacket extends RTPpacket {
     System.out.println("FEC-Level-Header");
     printheader(ulpLevelHeader.length, ulpLevelHeader);
     System.out.println("FEC-Payload");
-    printheader(3, payload);
+    String hexString = bytesToHex(payload);
+    System.out.println("..." + hexString.substring(hexString.length() - 32));
   }
 }

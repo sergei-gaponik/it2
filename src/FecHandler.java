@@ -25,7 +25,7 @@ public class FecHandler {
 
   int playCounter = 0; // SNr of RTP-packet to play next, initialized with first received packet
 
-  // *** RTP-Header ************************
+  // *** RTP-Header ************************ 
   static final int MJPEG = 26;
   int FEC_PT = 127; // Type for FEC
   int fecSeqNr; // Sender: increased by one, starting from 0
@@ -73,6 +73,10 @@ public class FecHandler {
    */
   public void setRtp(RTPpacket rtp) {
     // init new FEC packet if necessary
+
+    System.out.println(fec == null);
+
+
     if (fec == null) {
       fec =
           new FECpacket(
@@ -83,6 +87,13 @@ public class FecHandler {
     fecGroupCounter++; // count the packets in the group
     fec.TimeStamp = rtp.gettimestamp(); // adjust the time stamp to the last packet in the group
     fec.addRtp(rtp);
+
+    try{
+      fec.printHeaders();
+    }
+    catch(Exception e){
+      System.out.println("exception");
+    }
   }
 
   /** @return True, if all RTP-packets of the group are handled */
@@ -96,6 +107,9 @@ public class FecHandler {
    * @return Bitstream of FEC-Packet including RTP-Header
    */
   public byte[] getPacket() {
+
+    System.out.println("FEC SeqNr: " + fecSeqNr);
+
     fec.printHeaders();
     // Adjust and reset all involved variables
     fecSeqNr++;
@@ -105,9 +119,21 @@ public class FecHandler {
     return buf;
   }
 
+    /*
+  HashMap<Integer, RTPpacket> rtpStack = new HashMap<>(); // list of media packets
+  HashMap<Integer, FECpacket> fecStack = new HashMap<>(); // list of fec packets
+  HashMap<Integer, Integer> fecNr = new HashMap<>(); // Snr of corresponding fec packet
+  HashMap<Integer, List<Integer>> fecList = new HashMap<>(); // list of involved media packets
+  HashMap<Integer, List<Integer>> tsList = new HashMap<>(); 
+  */
+
   /** Reset of fec group and variables */
-  private void clearSendGroup() {
+  private void clearSendGroup(int snr) {
     // TODO
+
+
+    fecList.remove(snr);
+
   }
 
   /**
@@ -157,7 +183,7 @@ public class FecHandler {
     // build fec from rtp
     fec = new FECpacket(rtp.getpacket(), rtp.getpacket().length);
     // TASK remove comment for debugging
-    // fec.printHeaders();
+    fec.printHeaders();
 
     // stores fec
     int seqNrFec = fec.getsequencenumber();
@@ -220,11 +246,37 @@ public class FecHandler {
     if (rtp == null) {
       System.out.println("FEC: Media lost: " + snr);
       nrLost++;
+
+      System.out.println(useFec);
+
       if (checkCorrection(snr) && useFec) {
         nrCorrected++;
         System.out.println("---> FEC: correctable: " + snr);
-        return correctRtp(snr);
-      } else {
+
+        int fnr = fecNr.get(snr);
+        FECpacket fpacket = fecStack.get(fnr);
+
+        fpacket.printHeaders();
+
+        ArrayList<Integer> rtpList = fpacket.getRtpList();
+
+        System.out.println("fnr:");
+        System.out.println(fnr);
+        System.out.println("rtpList:");
+
+        for(int rtpItem : rtpList) {
+
+          System.out.print(rtpItem + " ");
+        }
+
+        System.out.println("");
+
+        fpacket.printHeaders();
+
+        //if(rtpList.size() == 0) return null;
+
+        return fpacket.getLostRtp(snr);
+      } else { 
         nrNotCorrected++;
         System.err.println("---> FEC: not correctable: " + snr);
         return null;
@@ -274,20 +326,35 @@ public class FecHandler {
    */
   private boolean checkCorrection(int nr) {
     //TASK complete this method!
+
+    System.out.println("checkCorrection");
+
+    List<Integer> associatedPackets = fecList.get(nr);
+
+    /*System.out.print("rtpStack: ");
+    for(int key : rtpStack.keySet()) System.out.print(key + " ");
+    System.out.println("");
+
+    System.out.print("fecList: ");
+    for(int key : fecList.keySet()) System.out.print(key + " ");
+    System.out.println("");*/
+
+    if(fecList.containsKey(nr) && fecNr.containsKey(nr)){
+      System.out.print("associatedPackets: ");
+      for(int key : associatedPackets) System.out.print(key + " ");
+      System.out.println("");
+
+      for(int i : associatedPackets){
+        if(i == nr) continue;
+        if(!rtpStack.containsKey(i)) return false;
+      }
+      return true;
+    }
+ 
     return false;
   }
 
-  /**
-   * Build a RTP packet from FEC and group
-   *
-   * @param nr Sequence Nr.
-   * @return RTP packet
-   */
-  private RTPpacket correctRtp(int nr) {
-    //TASK complete this method!
-    return fec.getLostRtp(nr);
-  }
-
+ 
   /**
    * It is necessary to clear all data structures
    *
@@ -295,6 +362,15 @@ public class FecHandler {
    */
   private void clearStack(int nr) {
     //TASK complete this method!
+
+    clearSendGroup(nr);
+
+    int fnr = fecNr.get(nr);
+
+    fecStack.remove(fnr); 
+    fecNr.remove(fnr);
+
+    System.out.println("clearStack");
   }
 
   // *************** Receiver Statistics ***********************************************************

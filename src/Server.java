@@ -264,6 +264,8 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
       if (frame != null) {
         System.out.println("Frame size: " + frame.length);
 
+        
+
         // Build RTP-JPEG RFC 2435
         JpegFrame jpegFrame = JpegFrame.getFromJpegBytes(frame);
         frame = jpegFrame.getAsRfc2435Bytes();
@@ -274,7 +276,12 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
 
         // retrieve the packet bitstream as array of bytes
         packet_bits = rtp_packet.getpacket();
+
+        System.out.println("printHeader");
+
         rtp_packet.printheader(); // Show header of bitstream if necessary
+        System.out.println("printPayload 8");
+        
         rtp_packet.printpayload(8);
 
         // send the packet as a DatagramPacket over the UDP socket
@@ -282,19 +289,24 @@ public class Server extends JFrame implements ActionListener, ChangeListener {
 
         sendPacketWithError(senddp, false); // Send with packet loss
 
+        System.out.println("setRtp");
         // FEC handling
         fec.setRtp(rtp_packet);
+
         if (fec.isReady()) {
           System.out.println("FEC-Encoder ready...");
           packet_bits = fec.getPacket();  // print Header
+
           // fec.printHeaders();
           // send to the FEC dest_port
           senddp = new DatagramPacket(packet_bits, packet_bits.length, ClientIPAddr, FEC_dest_port);
           sendPacketWithError(senddp, true);
         }
-
         // update GUI
         label.setText("Send frame #" + imagenb);
+
+        System.out.println("------------------------------------------------\n");
+
       } else timer.stop();
     } catch (Exception ex) {
       System.out.println("Exception caught: " + ex);

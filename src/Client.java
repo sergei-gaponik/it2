@@ -307,6 +307,8 @@ public class Client {
       System.out.println("Teardown Button pressed !");
       // TASK increase RTSP sequence number
 
+      RTSPSeqNb++;
+
       // Send TEARDOWN message to the server
       send_RTSP_request("TEARDOWN");
 

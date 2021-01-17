@@ -214,6 +214,9 @@ public class RTPpacket {
     printheader(n, payload);
   }
 
+  public void printbytes(byte[] data) {
+    printheader(data.length, data);
+  }
 
   void printheader(int size, byte[] data) {
     for (int i = 0; i < size; i++) {
